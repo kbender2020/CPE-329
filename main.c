@@ -36,10 +36,10 @@ int main(void) {
    P2->DIR  |= 0x02;       // set P2.1 as output
 
    while (1) {
-      P2->OUT |= 1<<1;    // P2.1 on
-      delay_ms(500, FREQ_3_MHZ);
-      P2->OUT &= 1<<1;   // P2.1 off
-      delay_ms(500, FREQ_3_MHZ);
+      P2->OUT |= (1<<1);    // P2.1 on
+      delay_us(500000, FREQ_3_MHZ);
+      P2->OUT &= ~(1<<1);   // P2.1 off
+      delay_us(500000, FREQ_3_MHZ);
     }
 }
 
@@ -78,7 +78,7 @@ void delay_ms(int ms, int freq) {
         break;
 
     case FREQ_3_MHZ:
-        for(i=0; i<ms*10; i++){__delay_cycles(U10_3_MHZ);}
+        for(i=0; i<ms*100; i++){__delay_cycles(U10_3_MHZ);}
         break;
 
     case FREQ_6_MHZ:
