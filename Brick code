@@ -1,0 +1,55 @@
+//*****************************************************************************
+//
+// MSP432 main.c template - Empty main
+//
+//****************************************************************************
+
+
+
+
+
+
+
+#include "msp.h"
+
+#define FREQ_3_MHZ 3
+#define time 1000000
+int i;
+void delay_us(int us, int freq);
+void delay_ms(int us, int freq);
+
+void main(void)
+{
+     P2->SEL1 &= ~0x02;      // set P2.1 as GPIO
+     P2->SEL0 &= ~0x02;      // set P2.5 as GPIO
+     P2->DIR  |= 0x02;       // set P2.1 as output
+
+     CS->KEY = 0x695A; // unlock CS registers
+     CS->CTL0 = 0; // reset DCO settings
+     CS->CTL0 = 0x00050000; // select DCO 5 (48MHz)
+     //CS->CTL1 = SELA__REFOCLK | SELS__DCOCLK | SELM__DCOCLK; // ACLK = REFOCLK, SMCLK = MCLK = DCOCLK
+     CS->KEY = 0; // lock CS registers
+
+     while(1) {
+         P2->OUT |= (1<<1);    // P2.1 on
+         delay_ms(1000, FREQ_3_MHZ);
+         P2->OUT &= ~(1<<1);   // P2.1 off
+         delay_ms(1000, FREQ_3_MHZ);
+     }
+}
+
+void delay_ms(int ms, int freq){
+    int num_cycles=(freq*ms*1000)/18;
+    for(i=0; i<num_cycles;i++)
+         {
+            __delay_cycles(1);
+         }
+     }
+
+void delay_us(int us, int freq){
+    int num_cycles=(freq*us)/18;
+    for(i=0; i<num_cycles;i++)
+         {
+            __delay_cycles(1);
+         }
+    }
