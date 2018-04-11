@@ -1,0 +1,39 @@
+#include "msp.h"
+
+
+/**
+ * main.c
+ */
+void init_LCD();
+void clear_LCD();
+void delay_ms(int ms, float freq);
+void delay_us(int us, float freq);
+void set_DCO(int freq);
+void nibble(){
+    P3 -> OUT |= BIT2;
+    delay_us(37, FREQ_3_MHZ);
+    P3 -> OUT &= ~BIT2;
+}
+
+void main(void)
+{
+
+}
+
+void init();
+    P6 -> DIR |= (BIT0|BIT1);             //Set Pin 6.0, 6.1 as output (RS, R/W)
+    P3 -> DIR |= BIT2;                    //Set Pin 3.2 as output (E)
+    P4 -> DIR |= (BIT1|BIT2|BIT3|BIT4);   //Set Pins 4.1-4.4 as outputs (DB4-DB7)
+    //Set Function
+    P6 -> OUT |= ~BIT0;                   //Set RS LOW (Command)
+    P6 -> OUT |= ~BIT1;                   //Set R/W LOW (Write)
+
+    P4 -> OUT = 0xFF & 0x03               //Write 0's to DB7-DB4
+    nibble();                             //Delay for 37us
+    P4 -> OUT &= 0x0C;                    //function set
+    nibble();
+    P4 -> OUT &= 0x0C;                    //Different function set somehow
+    nibble();
+    P4 -> OUT |=
+
+    //Display Set
