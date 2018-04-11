@@ -3,9 +3,7 @@
 #include "msp.h"
 #include "msp432.h"
 
-#define CS  ((CS_Type *) CS_BASE)
-
-
+#define FREQ_1_MHZ 1
 #define FREQ_1_5_MHZ 1.5
 #define FREQ_3_MHZ 3
 #define FREQ_6_MHZ 6
@@ -13,8 +11,8 @@
 #define FREQ_24_MHZ 24
 #define FREQ_48_MHZ 48
 
-void delay_ms(int ms, int freq);
-void delay_us(int us, int freq);
+void delay_ms(int ms, float freq);
+void delay_us(int us, float freq);
 void set_DCO(int freq);
 int i;
 
@@ -23,59 +21,83 @@ void main(void)
      P2->SEL1 &= ~0x02;      // set P2.1 as GPIO
      P2->SEL0 &= ~0x02;      // set P2.5 as GPIO
      P2->DIR  |= 0x02;       // set P2.1 as output
+     set_DCO(FREQ_3_MHZ);
+
+     /*for(i=0;i<2;i++){
+         P2->OUT |= (1<<1);    // P2.1 on
+         delay_us(100, FREQ_3_MHZ);
+         P2->OUT &= ~(1<<1);   // P2.1 off
+         delay_us(100, FREQ_3_MHZ);
+     }*/
 
      while(1) {
          P2->OUT |= (1<<1);    // P2.1 on
-         delay_ms(1000, FREQ_3_MHZ);
+         delay_us(1, FREQ_3_MHZ);
          P2->OUT &= ~(1<<1);   // P2.1 off
-         delay_ms(1000, FREQ_3_MHZ);
+         delay_us(1, FREQ_3_MHZ);
      }
 }
 
-void delay_ms(int ms, int freq){
+//Delay milliseconds function
+void delay_ms(int ms, float freq){
+    if(ms>0){
     int num_cycles=(freq*ms*1000)/18;
     for(i=0; i<num_cycles;i++)
          {
             __delay_cycles(1);
          }
      }
+}
 
-void delay_us(int us, int freq){
+//Delay microseconds function
+void delay_us(int us, float freq){
+    if(us>0){
     int num_cycles=(freq*us)/18;
-    for(i=0; i<num_cycles;i++)
-	     {
-            __delay_cycles(1);
-	     }
+    for(i=0; i<num_cycles;i++){
+           __delay_cycles(1);
+        }
     }
+}
 
 
-
-/* Set Frequency
+//Set Frequency
 void set_DCO(int freq){
+
+    CS->KEY = CS_KEY_VAL; // unlock CS registers
+    CS->CTL0 = 0; // clear register CTL0
+    // select clock sources
     switch(freq){
-    case FREQ_1.5_MHZ:
-        DCORSEL = 0
+    case FREQ_1_MHZ:
+        CS->CTL0 = CS_CTL0_DCORSEL_0;
+        CS->CTL1 = CS_CTL1_SELA_2 | CS_CTL1_SELS_3 | CS_CTL1_SELM_3;
         break;
     case FREQ_3_MHZ:
-        DCORSEL = 1
+        CS->CTL0 = CS_CTL0_DCORSEL_1;
+        CS->CTL1 = CS_CTL1_SELA_2 | CS_CTL1_SELS_3 | CS_CTL1_SELM_3;
         break;
     case FREQ_6_MHZ:
-        DCORSEL = 2
+        CS->CTL0 = CS_CTL0_DCORSEL_2;
+        CS->CTL1 = CS_CTL1_SELA_2 | CS_CTL1_SELS_3 | CS_CTL1_SELM_3;
         break;
     case FREQ_12_MHZ:
-        DCORSEL = 3
+        CS->CTL0 = CS_CTL0_DCORSEL_3;
+        CS->CTL1 = CS_CTL1_SELA_2 | CS_CTL1_SELS_3 | CS_CTL1_SELM_3;
         break;
     case FREQ_24_MHZ:
-        DCOSEL = 4
+        CS->CTL0 = CS_CTL0_DCORSEL_4;
+        CS->CTL1 = CS_CTL1_SELA_2 | CS_CTL1_SELS_3 | CS_CTL1_SELM_3;
         break;
     case FREQ_48_MHZ:
-        DCOSEL = 5
+        while ((PCM->CTL1 & PCM_CTL1_PMR_BUSY));
+        PCM->CTL0 = PCM_CTL0_KEY_VAL | PCM_CTL0_AMR_1;
+        while ((PCM->CTL1 & PCM_CTL1_PMR_BUSY));
+        FLCTL->BANK0_RDCTL = (FLCTL->BANK0_RDCTL &
+        ~(FLCTL_BANK0_RDCTL_WAIT_MASK)) | FLCTL_BANK0_RDCTL_WAIT_1;
+        FLCTL->BANK1_RDCTL = (FLCTL->BANK0_RDCTL &
+        ~(FLCTL_BANK1_RDCTL_WAIT_MASK)) | FLCTL_BANK1_RDCTL_WAIT_1;
+        CS->CTL0 = CS_CTL0_DCORSEL_5;
+        CS->CTL1 = CS->CTL1 & ~(CS_CTL1_SELM_MASK | CS_CTL1_DIVM_MASK) | CS_CTL1_SELM_3;
         break;
     }
-}*/
-
-// Delay milliseconds function
-// Switch-case statement selects which __delay_cycles() constant to use for each frequency.
-//Each #define 10US in the header above is the number of clock cycles it takes for __delay_cycles() to generate a 10us delay
-
-
+    CS->KEY = 0; // lock the CS registers
+}
