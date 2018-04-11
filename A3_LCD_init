@@ -20,7 +20,7 @@ void main(void)
 
 }
 
-void init();
+void init(){
     P6 -> DIR |= (BIT0|BIT1);             //Set Pin 6.0, 6.1 as output (RS, R/W)
     P3 -> DIR |= BIT2;                    //Set Pin 3.2 as output (E)
     P4 -> DIR |= (BIT1|BIT2|BIT3|BIT4);   //Set Pins 4.1-4.4 as outputs (DB4-DB7)
@@ -28,12 +28,23 @@ void init();
     P6 -> OUT |= ~BIT0;                   //Set RS LOW (Command)
     P6 -> OUT |= ~BIT1;                   //Set R/W LOW (Write)
 
-    P4 -> OUT = 0xFF & 0x03               //Write 0's to DB7-DB4
+    P4 -> OUT = 0x30;                     //Write 0's to DB7-DB4
     nibble();                             //Delay for 37us
-    P4 -> OUT &= 0x0C;                    //function set
+    P4 -> OUT &= 0x20;                    //function set
     nibble();
-    P4 -> OUT &= 0x0C;                    //Different function set somehow
+    P4 -> OUT &= 0x20;                    //Different function set somehow
     nibble();
-    P4 -> OUT |=
-
-    //Display Set
+    P4 -> OUT &= 0x00;                    //Display ON/OFF Control
+    P4 -> OUT &= 0x00;                    //No idea if this is correct. It doesn't seem right and I have no idea what the manual means with its second row of instructions
+    nibble();
+    P4 -> OUT &= 0x00;                    //Display Clear
+    P4 -> OUT &= 0x10;
+    
+    P3 -> OUT |=  BIT2;                   //Longer nibble
+    delay_us(1520, FREQ_3_MHZ);
+    P3 -> OUT &= ~BIT2;
+    
+    P4 -> OUT &= 0x00;                    //Entry Mode Set
+    P4 -> OUT &= 0x30;
+    nibble();
+    }
