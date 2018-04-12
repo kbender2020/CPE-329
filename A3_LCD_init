@@ -35,9 +35,11 @@ void init(){
     P4 -> OUT &= 0x20;                    //Different function set somehow
     nibble();
     P4 -> OUT &= 0x00;                    //Display ON/OFF Control
+    nibble();
     P4 -> OUT &= 0x00;                    //No idea if this is correct. It doesn't seem right and I have no idea what the manual means with its second row of instructions
     nibble();
     P4 -> OUT &= 0x00;                    //Display Clear
+    nibble();
     P4 -> OUT &= 0x10;
     
     P3 -> OUT |=  BIT2;                   //Longer nibble
