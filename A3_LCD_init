@@ -1,4 +1,5 @@
 #include "msp.h"
+
 #define FREQ_1_MHZ      1
 #define FREQ_1_5_MHZ    1.5
 #define FREQ_3_MHZ      3
@@ -23,30 +24,32 @@
  * GND  Cathode
  */
 
+//Functions used
 void nibble();
 void init_LCD();
 void clear_LCD();
-void write_char(char character);
-void delay_ms(int ms, float freq);
+void write_char_LCD(char character);
+void write_string_LCD(char string[32]);
 void delay_us(int us, float freq);
 void set_DCO(int freq);
+
+//Variables used
 int i;
 
 void main(void)
 {
     P4 -> DIR |= 0xFF;                    //Set all of P4 as outputs
     P4 -> OUT &= 0x00;                    //Set all outputs to 0
-    init_LCD();
-    write_char('A');
-    while(1){
-
-    }
+    init_LCD();                           //Run LCD initialization process
+    delay_us(2000000, FREQ_3_MHZ);        //Delay for 2 seconds just in case
+    write_string("Brian Arbiv is a dirty asshole");     //Standard string test phrase
+    while(1){}
 }
 
 //nibble() writes four bits to the LCD by first enabling E, sending the data, then disabling E
 void nibble(){
     P4 -> OUT |= BIT2;
-    delay_us(100, FREQ_3_MHZ);
+    delay_us(37, FREQ_3_MHZ);
     P4 -> OUT &= ~BIT2;
 }
 
@@ -58,7 +61,7 @@ void init_LCD(){
     nibble();                             //Write
     P4 -> OUT &= 0x20;                    //Send data again bc LCD is stupid
     nibble();
-    P4 -> OUT |= 0x80;                    //Function set (lower nibble): Sets number of lines and font size (2 lins 5x8)
+    P4 -> OUT |= 0x80;                    //Function set (lower nibble): Sets number of lines and font size (2 lines 5x8)
     nibble();
 
     P4 -> OUT &= 0x00;                    //Display ON/OFF Control (upper nibble)
@@ -68,9 +71,9 @@ void init_LCD(){
 
     P4 -> OUT &= 0x00;                    //Display Clear
     nibble();
-    P4 -> OUT |= 0x10;
-    P4 -> OUT |=  BIT2;                   //Longer nibble needed for clearing display
-    delay_us(3000, FREQ_3_MHZ);
+    P4 -> OUT |= 0x10;.
+    P4 -> OUT |=  BIT2;                   //Longer nibble (>1.52ms) needed for clearing display
+    delay_us(1520, FREQ_3_MHZ);
     P4 -> OUT &= ~BIT2;
 
     P4 -> OUT &= 0x00;                    //Entry Mode Set (upper nibble)
@@ -79,20 +82,37 @@ void init_LCD(){
     nibble();
     }
 
-void write_char(char character){
-    P4 -> OUT = character & 0xF1;           //Write upper nibble of character to the LCD
+//Writes entire 32 character string to the LCD
+void write_string(char string[32]){       //Maximum string length is 32 characters for LCD (2 lines, 16 characters each)
+    int j;
+    for (j=0; j<32; j++){
+        write_char(string[j]);
+        delay_us(100000, FREQ_3_MHZ);
+    }
+}
+
+//Writes individual characters to the LCD
+void write_char_LCD(char character){
+    char char_upper;
+    char char_lower;     
+    char_upper = character;
+    char_lower = character << 4;               //Shift the lower nibble in character to the upper nibble
+    P4 -> OUT = char_upper & 0xF0;             //Write upper nibble of character to the LCD
+    P4 -> OUT |= BIT0;                         //RS = 1
     nibble();
-    character = character << 4;             //Shift the lower bits of character into the upper bits
-    P4 -> OUT = character & 0xF1;           //Write the lower nibble of character to the LCD
+    P4 -> OUT = char_lower & 0xF0;             //Write the lower nibble of character to the LCD
+    P4 -> OUT |= BIT0;                         //RS = 1
     nibble();
 }
 
+//Clears the LCD Display of all characters
 void clear_LCD(){
     P4 -> OUT &= 0x00;
     nibble();
     P4 -> OUT |= 0x10;
     nibble();
 }
+
 //Microsecond delay
 void delay_us(int us, float freq){
     if(us>0){
