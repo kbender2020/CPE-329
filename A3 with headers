@@ -1,0 +1,66 @@
+#include "msp.h"
+#include "../headers/frequency.h"
+#include "../headers/setDCO.h"
+#include "../headers/delay_us.h"
+#include "../headers/lcdInit.h"
+
+/* MSP to LCD Pinout:
+ * GND  1
+ * 3V3  2
+ *
+ * P4.0 RS
+ * P4.1 R/W
+ * P4.2 E
+ * P4.3 -
+ * P4.4 DB4
+ * P4.5 DB5
+ * P4.6 DB6
+ * P4.7 DB7
+ * 3v3  Anode
+ * GND  Cathode
+ */
+
+//Functions used
+void write_char_LCD(char character);
+void write_string_LCD(char string[32]);
+
+
+//Variables used
+int i;
+
+void main(void)
+{
+    P4 -> DIR |= 0xFF;                    //Set all of P4 as outputs
+    P4 -> OUT &= 0x00;                    //Set all outputs to 0
+    init_LCD();                           //Run LCD initialization process
+    delay_us(2000000, FREQ_3_MHZ);        //Delay for 2 seconds just in case
+    write_string_LCD("nick is gay");     //Standard string test phrase
+    delay_us(10000000, FREQ_3_MHZ);
+    clear_LCD();
+    home_LCD();
+    while(1){}
+}
+
+
+//Writes entire 32 character string to the LCD
+void write_string_LCD(char string[32]){       //Maximum string length is 32 characters for LCD (2 lines, 16 characters each)
+    int j;
+    for (j=0; j<32; j++){
+        write_char_LCD(string[j]);
+        delay_us(100000, FREQ_3_MHZ);     //I put a delay here because it looks cooler to watch on the LCD
+    }
+}
+
+//Writes individual characters to the LCD
+void write_char_LCD(char character){
+    char char_upper;
+    char char_lower;
+    char_upper = character;
+    char_lower = character << 4;               //Shift the lower nibble in character to the upper nibble
+    P4 -> OUT = char_upper & 0xF0;             //Write upper nibble of character to the LCD
+    P4 -> OUT |= BIT0;                         //RS = 1
+    nibble();
+    P4 -> OUT = char_lower & 0xF0;             //Write the lower nibble of character to the LCD
+    P4 -> OUT |= BIT0;                         //RS = 1
+    nibble();
+}
