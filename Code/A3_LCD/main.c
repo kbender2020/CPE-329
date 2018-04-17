@@ -1,0 +1,177 @@
+#include "msp.h"
+
+#define FREQ_1_MHZ      1
+#define FREQ_1_5_MHZ    1.5
+#define FREQ_3_MHZ      3
+#define FREQ_6_MHZ      6
+#define FREQ_12_MHZ     12
+#define FREQ_24_MHZ     24
+#define FREQ_48_MHZ     48
+
+/* MSP to LCD Pinout:
+ * GND  1
+ * 3V3  2
+ *
+ * P4.0 RS
+ * P4.1 R/W
+ * P4.2 E
+ * P4.3 -
+ * P4.4 DB4
+ * P4.5 DB5
+ * P4.6 DB6
+ * P4.7 DB7
+ * 3v3  Anode
+ * GND  Cathode
+ */
+
+//Functions used
+void nibble();
+void init_LCD();
+void clear_LCD();
+void home_LCD();
+void write_char_LCD(char character);
+void write_string_LCD(char string[15]);
+void delay_us(int us, float freq);
+void set_DCO(int freq);
+
+//Variables used
+int i;
+
+void main(void)
+{
+    P4 -> DIR |= 0xFF;                    //Set all of P4 as outputs
+    P4 -> OUT &= 0x00;                    //Set all outputs to 0
+    init_LCD();                           //Run LCD initialization process
+    delay_us(2000000, FREQ_3_MHZ);        //Delay for 2 seconds just in case
+    write_string_LCD("Dank memes      ");     //Standard string test phrase
+    delay_us(10000000, FREQ_3_MHZ);
+    clear_LCD();
+    home_LCD();
+    while(1){}
+}
+
+//nibble() writes four bits to the LCD by first enabling E, sending the data, then disabling E
+void nibble(){
+    P4 -> OUT |= BIT2;
+    delay_us(37, FREQ_3_MHZ);
+    P4 -> OUT &= ~BIT2;
+}
+
+//LCD Initialization Process
+void init_LCD(){
+    //Set Function
+    delay_us(40000,FREQ_3_MHZ);
+    P4 -> OUT |= 0x20;                    //Function Set (upper nibble): This sets LCD in 4 bit mode
+    nibble();                             //Write
+    P4 -> OUT &= 0x20;                    //Send data again bc LCD is stupid
+    nibble();
+    P4 -> OUT |= 0x80;                    //Function set (lower nibble): Sets number of lines and font size (2 lines 5x8)
+    nibble();
+
+    P4 -> OUT &= 0x00;                    //Display ON/OFF Control (upper nibble)
+    nibble();
+    P4 -> OUT |= 0xF0;                    //Display ON/OFF Control (lower nibble): Display ON, Cursor ON, Blink ON
+    nibble();
+
+    P4 -> OUT &= 0x00;                    //Display Clear
+    nibble();
+    P4 -> OUT |= 0x10;
+    P4 -> OUT |=  BIT2;                   //Longer nibble (>1.52ms) needed for clearing display
+    delay_us(1520, FREQ_3_MHZ);
+    P4 -> OUT &= ~BIT2;
+
+    P4 -> OUT &= 0x00;                    //Entry Mode Set (upper nibble)
+    nibble();
+    P4 -> OUT |= 0x70;                    //Entry Mode Set (lower nibble)
+    nibble();
+    }
+
+//Writes entire 32 character string to the LCD
+void write_string_LCD(char string[15]){       //Maximum string length is 32 characters for LCD (2 lines, 16 characters each)
+    int j;
+    for (j=0; j<15; j++){
+        write_char_LCD(string[j]);
+        delay_us(100000, FREQ_3_MHZ);     //I put a delay here because it looks cooler to watch on the LCD
+    }
+}
+
+//Writes individual characters to the LCD
+void write_char_LCD(char character){
+    char char_upper;
+    char char_lower;
+    char_upper = character;
+    char_lower = character << 4;               //Shift the lower nibble in character to the upper nibble
+    P4 -> OUT = char_upper & 0xF0;             //Write upper nibble of character to the LCD
+    P4 -> OUT |= BIT0;                         //RS = 1
+    nibble();
+    P4 -> OUT = char_lower & 0xF0;             //Write the lower nibble of character to the LCD
+    P4 -> OUT |= BIT0;                         //RS = 1
+    nibble();
+}
+
+//Clears the LCD Display of all characters
+void clear_LCD(){
+    P4 -> OUT &= 0x00;
+    nibble();
+    P4 -> OUT |= 0x10;
+    nibble();
+}
+
+
+void home_LCD(){
+    P4 -> OUT = 0x00;
+    nibble();
+    P4 -> OUT = 0x10;
+    nibble();
+}
+//Microsecond delay
+void delay_us(int us, float freq){
+    if(us>0){
+    int num_cycles=(freq*us)/18;
+    for(i=0; i<num_cycles;i++){
+           __delay_cycles(1);
+        }
+    }
+}
+
+//Set Frequency
+void set_DCO(int freq){
+
+    CS->KEY = CS_KEY_VAL; // unlock CS registers
+    CS->CTL0 = 0; // clear register CTL0
+    // select clock sources
+    switch(freq){
+    case FREQ_1_MHZ:
+        CS->CTL0 = CS_CTL0_DCORSEL_0;
+        CS->CTL1 = CS_CTL1_SELA_2 | CS_CTL1_SELS_3 | CS_CTL1_SELM_3;
+        break;
+    case FREQ_3_MHZ:
+        CS->CTL0 = CS_CTL0_DCORSEL_1;
+        CS->CTL1 = CS_CTL1_SELA_2 | CS_CTL1_SELS_3 | CS_CTL1_SELM_3;
+        break;
+    case FREQ_6_MHZ:
+        CS->CTL0 = CS_CTL0_DCORSEL_2;
+        CS->CTL1 = CS_CTL1_SELA_2 | CS_CTL1_SELS_3 | CS_CTL1_SELM_3;
+        break;
+    case FREQ_12_MHZ:
+        CS->CTL0 = CS_CTL0_DCORSEL_3;
+        CS->CTL1 = CS_CTL1_SELA_2 | CS_CTL1_SELS_3 | CS_CTL1_SELM_3;
+        break;
+    case FREQ_24_MHZ:
+        CS->CTL0 = CS_CTL0_DCORSEL_4;
+        CS->CTL1 = CS_CTL1_SELA_2 | CS_CTL1_SELS_3 | CS_CTL1_SELM_3;
+        break;
+    case FREQ_48_MHZ:
+        while ((PCM->CTL1 & PCM_CTL1_PMR_BUSY));
+        PCM->CTL0 = PCM_CTL0_KEY_VAL | PCM_CTL0_AMR_1;
+        while ((PCM->CTL1 & PCM_CTL1_PMR_BUSY));
+        FLCTL->BANK0_RDCTL = (FLCTL->BANK0_RDCTL &
+        ~(FLCTL_BANK0_RDCTL_WAIT_MASK)) | FLCTL_BANK0_RDCTL_WAIT_1;
+        FLCTL->BANK1_RDCTL = (FLCTL->BANK0_RDCTL &
+        ~(FLCTL_BANK1_RDCTL_WAIT_MASK)) | FLCTL_BANK1_RDCTL_WAIT_1;
+        CS->CTL0 = CS_CTL0_DCORSEL_5;
+        CS->CTL1 = CS->CTL1 & ~(CS_CTL1_SELM_MASK | CS_CTL1_DIVM_MASK) | CS_CTL1_SELM_3;
+        break;
+    }
+    CS->KEY = 0; // lock the CS registers
+}
