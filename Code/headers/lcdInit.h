@@ -48,15 +48,6 @@ void write_char_LCD(char character){
     nibble();
 }
 
-//Writes entire 32 character string to the LCD
-void write_string_LCD(char string[32]){       //Maximum string length is 32 characters for LCD (2 lines, 16 characters each)
-    int j;
-    for (j=0; j<32; j++){
-        write_char_LCD(string[j]);
-        delay_us(100000, FREQ_3_MHZ);     //I put a delay here because it looks cooler to watch on the LCD
-    }
-}
-
 //Clears the LCD Display of all characters
 void clear_LCD(){
     P4 -> OUT &= 0x00;
@@ -71,4 +62,32 @@ void home_LCD(){
     nibble();
     P4 -> OUT = 0x10;
     nibble();
+}
+
+//Writes entire 32 character string to the LCD
+void write_string_LCD(char string[]){       //Maximum string length is 32 characters for LCD (2 lines, 16 characters each)
+    clear_LCD();
+    int len = strlen(string);
+    int j;
+    j = 0;
+    if(len > 16){
+        for (j=0; j<16; j++){
+            write_char_LCD(string[j]);
+            delay_us(100000, FREQ_3_MHZ);
+        }
+        P4 -> OUT = 0xC0;                       //Set DDRAM address to 0x40 (start of second line of LCD)
+        nibble();
+        P4 -> OUT = 0x00;
+        nibble();
+        for (j=16; j<len; j++){
+            write_char_LCD(string[j]);
+            delay_us(100000, FREQ_3_MHZ);
+        }
+    }
+    else{
+        for (j=0; j<len+1; j++){
+            write_char_LCD(string[j]);
+            delay_us(100000, FREQ_3_MHZ);
+        }
+    }
 }
