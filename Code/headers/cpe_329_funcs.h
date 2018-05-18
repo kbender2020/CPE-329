@@ -155,7 +155,7 @@ void write_string_LCD(char string[]){       //Maximum string length is 32 charac
     else{*/
         for (j=0; j<len+1; j++){
             write_char_LCD(string[j]);
-            delay_us(100000, FREQ_24_MHZ);
+            delay_us(10000, FREQ_24_MHZ);
         }
     //}
 }
@@ -239,7 +239,6 @@ void config_SPI(void){
 //Drive_DAC writes necessary voltage level value to DAC
 void Drive_DAC(unsigned int level){
     unsigned int DAC_Word = 0;
-    int i;
 
     DAC_Word = (0x7000) | (level & 0x0FFF);                    // 0x1000 sets DAC for Write
                                                                // to DAC, Gain = 2, /SHDN = 1
@@ -258,9 +257,6 @@ void Drive_DAC(unsigned int level){
 
     while (!(EUSCI_B0->IFG & EUSCI_B_IFG_TXIFG));              // Poll the TX flag to wait for completion
 
-    for(i = 200; i > 0; i--);                                  // Delay 200 16 MHz SMCLK periods
-                                                               // to ensure TX is complete by SIMO
-
     P4->OUT |= BIT3;                                           // Set P4.1   (drive /CS high on DAC)
 
     return;
@@ -271,14 +267,16 @@ void config_TIMER_A(void){
     TIMER_A0->CCTL[0] = TIMER_A_CCTLN_CCIE;                    // enable the interrupt for TACCR0 (square wave)
     // Initializing timer count
     TIMER_A0->CCR[0] = 10;
-    TIMER_A0->CCR[1] = 10;
-    TIMER_A0->CCR[2] = 10;
+    //TIMER_A0->CCR[1] = 10;
+    //TIMER_A0->CCR[2] = 10;
 
     TIMER_A0->CTL = TIMER_A_CTL_SSEL__SMCLK | TIMER_A_CTL_MC__CONTINUOUS;
+    //TIMER_A1->CTL = TIMER_A_CTL_SSEL__SMCLK | TIMER_A_CTL_MC__CONTINUOUS;
+    //TIMER_A2->CTL = TIMER_A_CTL_SSEL__SMCLK | TIMER_A_CTL_MC__CONTINUOUS;
 
     // enable NVIC and global interrupts
     NVIC->ISER[0] = 1 << ((TA0_0_IRQn) & 31);
-    NVIC->ISER[1] = 1 << ((TA1_0_IRQn) & 31);
-    NVIC->ISER[2] = 1 << ((TA2_0_IRQn) & 31);
+    //NVIC->ISER[1] = 1 << ((TA1_0_IRQn) & 31);
+    //NVIC->ISER[2] = 1 << ((TA2_0_IRQn) & 31);
     __enable_irq();
 }
